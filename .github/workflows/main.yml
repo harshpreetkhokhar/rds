@@ -18,6 +18,7 @@ jobs:
         with:
           aws-access-key-id: "ASIAZQ3DNS7SE5PBACQC"
           aws-secret-access-key: "euS5lIc5ihK9XTdrk//GYIWfvMmB6cx3CaMnW4Bo"
+          aws_session_token : "IQoJb3JpZ2luX2VjEEcaCXVzLXdlc3QtMiJIMEYCIQDhBBNaWe+0imngHGkS84HxUMjk/ORTOiF8tTUWVfQxnwIhAOAQU3nUneSLsEHhqtOy6rsd6BwweuCpmHPLemuPMauUKpsDCKD//////////wEQABoMNjU0NjU0MTUwNjI4IgyuGALagSRy+ru7Tpcq7wLLm8XuYxKsg5DAjF/RAlA8HNKkqrEFbpwoJ3AYHdhigdzeejxNPluHrEZ8XcUrvTzF5w62LZr9GKf0I7Is6cjkGd1DOSPieX7cwEaTo46BB8sk+YIdX3+Zb2bbFfe334QBA4C469yzhbwuE4PoMCK6eaWhQ085O50TY60Uif66YmKWL7jB0f9bx/JXfbtFjO+IBsbDc1wX1WrKkjmo1oPvjJXg9PLWtSyRK06fnPFSgOweSkPoeYyj++WLKBzCmZ8jhO7d6IZzlDg6SRwgHmKqvlGC7NwxEB0EPNb/avxg/NezERIxbvGC/QScekF2xryqxBGl0evK1ZmKjiOmq0xblUP9x8kb4xq+1e5hDd2IsX2HQpuQEPQu0mSZThcQEaqO7eY6LbmHraLPKF1ZXrVpQBCixvdpA+teRtm9W2IM4eC41dhK3Jca5wT8bV1VXw9XLwB3uwEnhS1wOKQm7+HLDUkROEaBERPGhR7pR3PAMKqi9L4GOqUBEOqkCaXw3HW7oD3BSCihGgFoNFnusWYZmrYr/CBTr6TZsqeFriHYexmeRf6PEMu679e62bBxP0F5Rhn4jv7kizHMjx4nb+o86Da3QxxgKbjyi823yDdEYHX1oIz5cmaBZ9XuFEaR5r9khZ3IJ9yPQOnN+QusGd0XQ83qaMf2xAEoW6DRXBPhuLRnxR6ycVomXVww/3lBlY02bosNg9udy4N49dTv"
           aws-region: us-east-1
 
       - name: Get Current Restore Time from AWS
