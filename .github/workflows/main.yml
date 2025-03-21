@@ -74,5 +74,5 @@ jobs:
         if: env.trigger == 'true'
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: update-scheduler-and-stop-rds.yml
+          workflow: stop_rds.yml
           token: ${{ secrets.GH_PAT }}
