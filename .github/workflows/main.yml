@@ -12,30 +12,40 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: "ASIAZQ3DNS7SBX26EYDG"
-          aws-secret-access-key: "ZAx1dc+FCRdJUe/bAm54aouimlCMybD9rtCe2wXG"
-          aws-region: "us-east-1"
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Get Current Restore Time from AWS
         id: get-restore-time
         run: |
+          set -e  # Stop script on first error
+          
           INSTANCE_ID="db-2HSIGCFAW6W3FJ6SSKYJAFUHTY"
-          LAST_RESTORE_TIME=$(aws rds describe-db-instances --db-instance-identifier $INSTANCE_ID --query "DBInstances[0].LatestRestorableTime" --output text)
+          LAST_RESTORE_TIME=$(aws rds describe-db-instances --db-instance-identifier "$INSTANCE_ID" --query "DBInstances[0].LatestRestorableTime" --output text)
+          
+          if [ -z "$LAST_RESTORE_TIME" ] || [ "$LAST_RESTORE_TIME" == "None" ]; then
+            echo "Error: Could not retrieve RDS Restore Time!"
+            exit 1
+          fi
           
           echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
-          echo "Latest Restore Time: $LAST_RESTORE_TIME"
+          echo "Retrieved Restore Time: $LAST_RESTORE_TIME"
 
       - name: Compare with Last Stored Restore Time
         id: compare-time
         run: |
-          # Ensure restore_time.txt exists
-          if [[ ! -f restore_time.txt ]]; then
-            echo "none" > restore_time.txt
+          set -e  # Stop script on first error
+
+          # Read previous restore time from file (or default to "none")
+          if [ -f restore_time.txt ]; then
+            STORED_RESTORE_TIME=$(cat restore_time.txt)
+          else
+            STORED_RESTORE_TIME="none"
           fi
           
-          STORED_RESTORE_TIME=$(cat restore_time.txt)
           echo "Stored Restore Time: $STORED_RESTORE_TIME"
           echo "Current Restore Time: $LAST_RESTORE_TIME"
 
@@ -51,6 +61,8 @@ jobs:
       - name: Commit Updated Restore Time
         if: env.trigger == 'true'
         run: |
+          set -e  # Stop script on first error
+          
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           git add restore_time.txt
