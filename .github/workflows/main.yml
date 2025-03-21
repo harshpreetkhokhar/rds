@@ -1,8 +1,6 @@
 name: Check RDS Restore Time
 
 on:
-  # schedule:
-  #   - cron: "0 * * * *"  # Runs every hour
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -16,21 +14,28 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id:"ASIAZQ3DNS7SBX26EYDG"
-          aws-secret-access-key:"ZAx1dc+FCRdJUe/bAm54aouimlCMybD9rtCe2wXG"
-          aws-region:"us-east-1"
-          
+          aws-access-key-id: "ASIAZQ3DNS7SBX26EYDG"
+          aws-secret-access-key: "ZAx1dc+FCRdJUe/bAm54aouimlCMybD9rtCe2wXG"
+          aws-region: "us-east-1"
+
       - name: Get Current Restore Time from AWS
         id: get-restore-time
         run: |
           INSTANCE_ID="db-2HSIGCFAW6W3FJ6SSKYJAFUHTY"
           LAST_RESTORE_TIME=$(aws rds describe-db-instances --db-instance-identifier $INSTANCE_ID --query "DBInstances[0].LatestRestorableTime" --output text)
+          
           echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
+          echo "Latest Restore Time: $LAST_RESTORE_TIME"
 
       - name: Compare with Last Stored Restore Time
         id: compare-time
         run: |
-          STORED_RESTORE_TIME=$(cat restore_time.txt || echo "none")
+          # Ensure restore_time.txt exists
+          if [[ ! -f restore_time.txt ]]; then
+            echo "none" > restore_time.txt
+          fi
+          
+          STORED_RESTORE_TIME=$(cat restore_time.txt)
           echo "Stored Restore Time: $STORED_RESTORE_TIME"
           echo "Current Restore Time: $LAST_RESTORE_TIME"
 
