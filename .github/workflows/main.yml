@@ -75,4 +75,4 @@ jobs:
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: update-scheduler-and-stop-rds.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
