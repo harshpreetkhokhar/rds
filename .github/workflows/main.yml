@@ -1,0 +1,60 @@
+name: Check RDS Restore Time
+
+on:
+  # schedule:
+  #   - cron: "0 * * * *"  # Runs every hour
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  check-restore-time:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: "ASIAZQ3DNS7SE5PBACQC"
+          aws-secret-access-key: "euS5lIc5ihK9XTdrk//GYIWfvMmB6cx3CaMnW4Bo"
+          aws-region: us-east-1
+
+      - name: Get Current Restore Time from AWS
+        id: get-restore-time
+        run: |
+          INSTANCE_ID="db-2HSIGCFAW6W3FJ6SSKYJAFUHTY"
+          LAST_RESTORE_TIME=$(aws rds describe-db-instances --db-instance-identifier $INSTANCE_ID --query "DBInstances[0].LatestRestorableTime" --output text)
+          echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
+
+      - name: Compare with Last Stored Restore Time
+        id: compare-time
+        run: |
+          STORED_RESTORE_TIME=$(cat restore_time.txt || echo "none")
+          echo "Stored Restore Time: $STORED_RESTORE_TIME"
+          echo "Current Restore Time: $LAST_RESTORE_TIME"
+
+          if [[ "$LAST_RESTORE_TIME" != "$STORED_RESTORE_TIME" ]]; then
+            echo "Restore time changed, triggering pipeline 2"
+            echo "$LAST_RESTORE_TIME" > restore_time.txt
+            echo "trigger=true" >> $GITHUB_ENV
+          else
+            echo "Restore time unchanged, no action needed."
+            echo "trigger=false" >> $GITHUB_ENV
+          fi
+
+      - name: Commit Updated Restore Time
+        if: env.trigger == 'true'
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add restore_time.txt
+          git commit -m "Updated RDS Restore Time to $LAST_RESTORE_TIME"
+          git push origin main
+
+      # - name: Trigger Pipeline 2
+      #   if: env.trigger == 'true'
+      #   uses: benc-uk/workflow-dispatch@v1
+      #   with:
+      #     workflow: update-scheduler-and-stop-rds.yml
+      #     token: ${{ secrets.GITHUB_TOKEN }}
