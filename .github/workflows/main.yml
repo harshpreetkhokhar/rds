@@ -24,7 +24,7 @@ jobs:
         run: |
           set -e  # Stop script on first error
           
-          INSTANCE_ID="db-2HSIGCFAW6W3FJ6SSKYJAFUHTY"
+          INSTANCE_ID="database-1"
           LAST_RESTORE_TIME=$(aws rds describe-db-instances --db-instance-identifier "$INSTANCE_ID" --query "DBInstances[0].LatestRestorableTime" --output text)
           
           if [ -z "$LAST_RESTORE_TIME" ] || [ "$LAST_RESTORE_TIME" == "None" ]; then
