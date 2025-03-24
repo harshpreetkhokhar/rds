@@ -12,16 +12,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download schedule artifact
-        uses: actions/download-artifact
-        with:
-          name: schedule-file
-
-      - name: Read calculated schedule from file
+      - name: Read calculated schedule from repository
         id: read_schedule
         run: |
-          NEXT_SCHEDULE=$(cat schedule.txt)
-          echo "New schedule: $NEXT_SCHEDULE"
+          if [ -f schedule.txt ]; then
+            NEXT_SCHEDULE=$(cat schedule.txt)
+            echo "New schedule: $NEXT_SCHEDULE"
+          else
+            echo "Error: schedule.txt not found!"
+            exit 1
+          fi
           
       - name: Update workflow file with new schedule
         run: |
