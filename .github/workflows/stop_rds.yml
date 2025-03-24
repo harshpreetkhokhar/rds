@@ -39,7 +39,7 @@ jobs:
           git config --global user.email "github-actions@users.noreply.github.com"
           git add .github/workflows/stop_rds.yml
           git commit -m "Update schedule for workflow"
-          git push 
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/harshpreetkhokhar/rds.git main
   # stop-rds:
   #   needs: update-cron-job
   #   runs-on: ubuntu-latest
