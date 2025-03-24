@@ -1,58 +1,55 @@
-name: Update Scheduler & Stop RDS
+name: Update Scheduler and Stop RDS
 
 on:
-  workflow_dispatch:  # Triggered by Pipeline 1
-
+  workflow_dispatch:  # Trigger manually or from another pipeline
+  schedule:
+    - cron: "0 3 * * 0" 
 jobs:
-  update-scheduler-and-stop-rds:
+  update-cron-job:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Get Latest Restore Time
+        run: |
+          LAST_RESTORE_TIME=$(cat restore_time.txt)
+          echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
+
+      - name: Calculate Next Cron Time (7 Days Later)
+        id: cron
+        run: |
+          NEXT_CRON=$(date -d "$LAST_RESTORE_TIME + 7 days" +"%M %H %d %m *")
+          echo "NEXT_CRON=$NEXT_CRON" >> $GITHUB_ENV
+          echo "Next cron schedule: $NEXT_CRON"
+
+      - name: Update Cron Schedule in Workflow
+        run: |
+          sed -i "s/cron: \".*\"/cron: \"$NEXT_CRON\"/" .github/workflows/stop_rds.yml
+          cat .github/workflows/stop_rds.yml
+
+      - name: Commit and Push Changes
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/harshpreetkhokhar/rds.git
+          git add .github/workflows/stop_rds.yml
+          git commit -m "Updated cron job to run on $NEXT_CRON"
+          git push origin main
+
+  stop-rds:
+    needs: update-cron-job
+    runs-on: ubuntu-latest
+    steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Get Latest Restore Time
-        id: get-restore-time
-        run: |
-          INSTANCE_ID= "database-1"
-          LAST_RESTORE_TIME=$(aws rds describe-db-instances --db-instance-identifier $INSTANCE_ID --query "DBInstances[0].LatestRestorableTime" --output text)
-          echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
-
-      - name: Calculate Next Stop Time
-        id: calculate-stop-time
-        run: |
-          NEXT_STOP_TIME=$(date -d "$LAST_RESTORE_TIME + 7 days" +"%Y-%m-%d %H:%M:%S")
-          echo "NEXT_STOP_TIME=$NEXT_STOP_TIME" >> $GITHUB_ENV
-          echo "Next Stop Time: $NEXT_STOP_TIME"
-
-      - name: Wait Until Stop Time
-        run: |
-          CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S")
-          STOP_TIME=$(date -u -d "${{ env.NEXT_STOP_TIME }}" +"%Y-%m-%d %H:%M:%S")
-
-          echo "Current Time: $CURRENT_TIME"
-          echo "RDS Stop Time: $STOP_TIME"
-
-          # Convert time to seconds
-          CURRENT_SECONDS=$(date -d "$CURRENT_TIME" +%s)
-          STOP_SECONDS=$(date -d "$STOP_TIME" +%s)
-
-          # Calculate wait time
-          if [ "$STOP_SECONDS" -gt "$CURRENT_SECONDS" ]; then
-            WAIT_TIME=$((STOP_SECONDS - CURRENT_SECONDS))
-            echo "Waiting for $WAIT_TIME seconds before stopping RDS..."
-            sleep $WAIT_TIME
-          else
-            echo "Stop time is in the past. Stopping RDS immediately..."
-          fi
+          aws-region: us-east-1  # Change to your AWS region
 
       - name: Stop RDS Instance
         run: |
-          echo "Stopping RDS instance: database-1 "
-          aws rds stop-db-instance --db-instance-identifier databse-1 
+          aws rds stop-db-instance --db-instance-identifier database-1
