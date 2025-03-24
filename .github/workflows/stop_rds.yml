@@ -40,7 +40,7 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_PAT}@github.com/harshpreetkhokhar/rds.git
           git add .github/workflows/stop_rds.yml
           git commit -m "Updated cron job to run on $NEXT_CRON"
-          git push origin main
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/harshpreetkhokhar/rds.git main
 
   stop-rds:
     needs: update-cron-job
