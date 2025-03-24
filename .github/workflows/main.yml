@@ -3,8 +3,8 @@ name: Check RDS Restore Time
 on:
   workflow_dispatch:  # Manual trigger
   
-  schedule:
-    - cron: "* * * * *" 
+  # schedule:
+  #   - cron: "* * * * *" 
 jobs:
   check-restore-time:
     runs-on: ubuntu-latest
