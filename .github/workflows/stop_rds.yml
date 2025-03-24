@@ -1,17 +1,17 @@
 name: Update Scheduler and Stop RDS
 
 on:
-  
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 0" 
+
 jobs:
   update-cron-job:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
+
       - name: Configure Git
         run: |
           git config --global user.email "github-actions@github.com"
@@ -29,20 +29,30 @@ jobs:
           echo "NEXT_CRON=$NEXT_CRON" >> $GITHUB_ENV
           echo "Next cron schedule: $NEXT_CRON"
 
-      - name: Update Cron Schedule in Workflow
+      - name: Check if Cron Schedule Has Changed
+        id: check-cron
         run: |
-          sed -i "s/cron: \".*\"/cron: \"$NEXT_CRON\"/" .github/workflows/stop_rds.yml
-          cat .github/workflows/stop_rds.yml
+          CURRENT_CRON=$(grep -oP 'cron: "\K[^"]+' .github/workflows/stop_rds.yml)
+          echo "Current Cron in Workflow: $CURRENT_CRON"
+          echo "New Cron to be Updated: $NEXT_CRON"
+
+          if [[ "$CURRENT_CRON" != "$NEXT_CRON" ]]; then
+            echo "Updating cron schedule..."
+            sed -i "s/cron: \".*\"/cron: \"$NEXT_CRON\"/" .github/workflows/stop_rds.yml
+            echo "update=true" >> $GITHUB_ENV
+          else
+            echo "No changes needed."
+            echo "update=false" >> $GITHUB_ENV
+          fi
 
       - name: Commit and Push Changes
-        if: env.trigger == 'true'
+        if: env.update == 'true'
         run: |
           set -e  # Stop script on first error
-          
           git add .github/workflows/stop_rds.yml
-          git commit -m "Updated cron job to run on $NEXT_CRON" || echo "No changes to commit"
+          git commit -m "Updated cron job to run on $NEXT_CRON"
           git push https://x-access-token:${{ secrets.GH_PAT1 }}@github.com/harshpreetkhokhar/rds.git main
-          
+
   stop-rds:
     needs: update-cron-job
     runs-on: ubuntu-latest
