@@ -11,6 +11,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
 
       - name: Get Latest Restore Time
         run: |
