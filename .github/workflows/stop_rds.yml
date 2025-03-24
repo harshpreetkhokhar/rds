@@ -36,7 +36,7 @@ jobs:
 
       - name: Commit and Push Changes
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT1 }}
         run: |
           git remote set-url origin https://x-access-token:${GH_PAT}@github.com/harshpreetkhokhar/rds.git
           git add .github/workflows/stop_rds.yml
