@@ -5,6 +5,7 @@ on:
   
   # schedule:
   #   - cron: "* * * * *" 
+
 jobs:
   check-restore-time:
     runs-on: ubuntu-latest
@@ -34,30 +35,40 @@ jobs:
             exit 1
           fi
           
+          # Convert restore time to UNIX timestamp
+          LAST_RESTORE_TIMESTAMP=$(date -d "$LAST_RESTORE_TIME" +%s)
+          
+          # Calculate new restore time (7 days and 20 minutes later)
+          NEXT_RESTORE_TIMESTAMP=$((LAST_RESTORE_TIMESTAMP + 7*24*60*60 + 20*60))
+          NEXT_RESTORE_TIME=$(date -d "@$NEXT_RESTORE_TIMESTAMP" --utc +"%Y-%m-%dT%H:%M:%SZ")
+          
           echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
+          echo "NEXT_RESTORE_TIME=$NEXT_RESTORE_TIME" >> $GITHUB_ENV
           echo "Retrieved Restore Time: $LAST_RESTORE_TIME"
+          echo "Calculated Next Restore Time: $NEXT_RESTORE_TIME"
 
       - name: Compare with Last Stored Restore Time
         id: compare-time
         run: |
           set -e  # Stop script on first error
 
-          # Read previous restore time from file (or default to "none")
-          if [ -f restore_time.txt ]; then
-            STORED_RESTORE_TIME=$(cat restore_time.txt)
+          # Read previous next restore time from file (or default to "none")
+          if [ -f next_restore_time.txt ]; then
+            STORED_NEXT_RESTORE_TIME=$(cat next_restore_time.txt)
           else
-            STORED_RESTORE_TIME="none"
+            STORED_NEXT_RESTORE_TIME="none"
           fi
           
-          echo "Stored Restore Time: $STORED_RESTORE_TIME"
-          echo "Current Restore Time: $LAST_RESTORE_TIME"
+          echo "Stored Next Restore Time: $STORED_NEXT_RESTORE_TIME"
+          echo "Current Next Restore Time: $NEXT_RESTORE_TIME"
 
-          if [[ "$LAST_RESTORE_TIME" != "$STORED_RESTORE_TIME" ]]; then
-            echo "Restore time changed, triggering pipeline 2"
-            echo "$LAST_RESTORE_TIME" > restore_time.txt
+          if [[ "$NEXT_RESTORE_TIME" != "$STORED_NEXT_RESTORE_TIME" ]]; then
+            echo "Next restore time changed, updating files and triggering pipeline."
+            echo "$NEXT_RESTORE_TIME" > next_restore_time.txt
+            echo "$NEXT_RESTORE_TIME" > schedule.txt
             echo "trigger=true" >> $GITHUB_ENV
           else
-            echo "Restore time unchanged, no action needed."
+            echo "Next restore time unchanged, no action needed."
             echo "trigger=false" >> $GITHUB_ENV
           fi
 
@@ -68,9 +79,9 @@ jobs:
           
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
-          git add restore_time.txt
-          git commit -m "Updated RDS Restore Time to $LAST_RESTORE_TIME"
-           git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/harshpreetkhokhar/rds.git main
+          git add next_restore_time.txt schedule.txt
+          git commit -m "Updated Next RDS Restore Time to $NEXT_RESTORE_TIME"
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/harshpreetkhokhar/rds.git main
 
       - name: Trigger Pipeline 2
         if: env.trigger == 'true'
