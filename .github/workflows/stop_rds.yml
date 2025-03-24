@@ -27,7 +27,7 @@ jobs:
         run: |
           # Use the GitHub API to modify the schedule in the workflow file
           NEW_CRON=$(echo "$NEXT_SCHEDULE" | sed 's/\*/\\*/g')  # Escape the asterisks for API
-          sed -i "s/cron: .*/cron: $NEW_CRON/" .github/workflows/your_workflow.yml
+          sed -i "s/cron: .*/cron: $NEW_CRON/" .github/workflows/stop_rds.yml
           
           
       - name: Commit changes
