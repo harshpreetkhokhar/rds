@@ -35,7 +35,10 @@ jobs:
           cat .github/workflows/stop_rds.yml
 
       - name: Commit and Push Changes
+        if: env.trigger == 'true'
         run: |
+          set -e  # Stop script on first error
+          
           git add .github/workflows/stop_rds.yml
           git commit -m "Updated cron job to run on $NEXT_CRON" || echo "No changes to commit"
           git push https://x-access-token:${{ secrets.GH_PAT1 }}@github.com/harshpreetkhokhar/rds.git main
