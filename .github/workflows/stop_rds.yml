@@ -2,8 +2,8 @@ name: Update Scheduler and Stop RDS
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 0" 
+  # schedule:
+  #   - cron: "0 3 * * 0" 
 
 jobs:
   update-cron-job:
@@ -12,59 +12,43 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
-
-      - name: Get Latest Restore Time
-        run: |
-          LAST_RESTORE_TIME=$(cat restore_time.txt)
-          echo "LAST_RESTORE_TIME=$LAST_RESTORE_TIME" >> $GITHUB_ENV
-
-      - name: Calculate Next Cron Time (7 Days Later)
-        id: cron
-        run: |
-          NEXT_CRON=$(date -d "$LAST_RESTORE_TIME + 7 days" +"%M %H %d %m *")
-          echo "NEXT_CRON=$NEXT_CRON" >> $GITHUB_ENV
-          echo "Next cron schedule: $NEXT_CRON"
-
-      - name: Check if Cron Schedule Has Changed
-        id: check-cron
-        run: |
-          CURRENT_CRON=$(grep -oP 'cron: "\K[^"]+' .github/workflows/stop_rds.yml)
-          echo "Current Cron in Workflow: $CURRENT_CRON"
-          echo "New Cron to be Updated: $NEXT_CRON"
-
-          if [[ "$CURRENT_CRON" != "$NEXT_CRON" ]]; then
-            echo "Updating cron schedule..."
-            sed -i "s/cron: \".*\"/cron: \"$NEXT_CRON\"/" .github/workflows/stop_rds.yml
-            echo "update=true" >> $GITHUB_ENV
-          else
-            echo "No changes needed."
-            echo "update=false" >> $GITHUB_ENV
-          fi
-
-      - name: Commit and Push Changes
-        if: env.update == 'true'
-        run: |
-          set -e  # Stop script on first error
-          git add .github/workflows/stop_rds.yml
-          git commit -m "Updated cron job to run on $NEXT_CRON"
-          git push https://x-access-token:${{ secrets.GH_PAT1 }}@github.com/harshpreetkhokhar/rds.git main
-
-  stop-rds:
-    needs: update-cron-job
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Download schedule artifact
+        uses: actions/download-artifact@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1  
+          name: schedule-file
 
-      - name: Stop RDS Instance
+      - name: Read calculated schedule from file
+        id: read_schedule
         run: |
-          aws rds stop-db-instance --db-instance-identifier database-1
+          NEXT_SCHEDULE=$(cat schedule.txt)
+          echo "New schedule: $NEXT_SCHEDULE"
+          
+      - name: Update workflow file with new schedule
+        run: |
+          # Use the GitHub API to modify the schedule in the workflow file
+          NEW_CRON=$(echo "$NEXT_SCHEDULE" | sed 's/\*/\\*/g')  # Escape the asterisks for API
+          sed -i "s/cron: .*/cron: $NEW_CRON/" .github/workflows/your_workflow.yml
+          
+          
+      - name: Commit changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git add .github/workflows/your_workflow.yml
+          git commit -m "Update schedule for workflow"
+          git push 
+  # stop-rds:
+  #   needs: update-cron-job
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v2
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+  #         aws-region: us-east-1  
+
+  #     - name: Stop RDS Instance
+  #       run: |
+  #         aws rds stop-db-instance --db-instance-identifier database-1
