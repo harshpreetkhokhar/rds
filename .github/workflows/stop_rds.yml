@@ -36,11 +36,10 @@ jobs:
 
       - name: Commit and Push Changes
         run: |
-          git remote set-url origin "https://${{ secrets.GH_PAT1 }}@github.com/harshpreetkhokhar/rds.git"
-          git pull origin main
           git add .github/workflows/stop_rds.yml
           git commit -m "Updated cron job to run on $NEXT_CRON" || echo "No changes to commit"
-          git push origin main
+          git push https://x-access-token:${{ secrets.GH_PAT1 }}@github.com/harshpreetkhokhar/rds.git main
+          
   stop-rds:
     needs: update-cron-job
     runs-on: ubuntu-latest
