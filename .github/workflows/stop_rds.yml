@@ -1,10 +1,8 @@
 name: Update Scheduler and Stop RDS
 
 on:
-  workflow_run:
-    workflows: ["Check RDS Restore Time"]
-    types:
-      - completed
+  
+  workflow_dispatch:
   schedule:
     - cron: "0 3 * * 0" 
 jobs:
